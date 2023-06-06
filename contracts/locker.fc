@@ -1,0 +1,176 @@
+#include "imports/stdlib.fc";
+#include "common.fc";
+
+const int error::invalid_bill_sender = 71;
+const int error::deposits_time_ended = 72;
+const int error::withdraw_time_not_started = 73;
+const int error::not_enough_coins_for_deposit = 74;
+const int error::not_enough_coins_for_reward = 75;
+
+const int minimum_deposit = 50000000000; ;; 50 TON, minimum_deposit must be greater than 1 ton
+const int minimum_reward = 50000000000; ;; 50 TON, minimum_reward must be greater than 1 ton
+
+;; storage variables
+
+global int total_coins_locked;
+global int total_reward;
+global int deposits_end_time;
+global int vesting_start_time;
+global int vesting_total_duration;
+global int unlock_period;
+global cell bill_code;
+
+() load_data() impure {
+    slice ds = get_data().begin_parse();
+
+    total_coins_locked = ds~load_coins();
+    total_reward = ds~load_coins();
+    deposits_end_time = ds~load_uint(32);
+    vesting_start_time = ds~load_uint(32);
+    vesting_total_duration = ds~load_uint(32);
+    unlock_period = ds~load_uint(32);
+    bill_code = ds~load_ref();
+
+    ds.end_parse();
+}
+
+() save_data() impure {
+    set_data(
+            begin_cell()
+                    .store_coins(total_coins_locked)
+                    .store_coins(total_reward)
+                    .store_uint(deposits_end_time, 32)
+                    .store_uint(vesting_start_time, 32)
+                    .store_uint(vesting_total_duration, 32)
+                    .store_uint(unlock_period, 32)
+                    .store_ref(bill_code)
+                    .end_cell()
+    );
+}
+
+int _get_unlocked_amount(int now_time, int total_amount) {
+    if (now_time >= vesting_start_time + vesting_total_duration) {
+        return total_amount;
+    }
+
+    if (now_time < vesting_start_time + unlock_period) {
+        return 0;
+    }
+
+    return total_amount * ((now_time - vesting_start_time) / unlock_period) / (vesting_total_duration / unlock_period);
+}
+
+int _get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_deposit) {
+    int total_user_deposit_and_reward = total_user_deposit + (total_user_deposit * total_reward / total_coins_locked);
+
+    int old_amount_to_send = _get_unlocked_amount(last_withdraw_time, total_user_deposit_and_reward);
+    int current_amount_to_send = _get_unlocked_amount(now_time, total_user_deposit_and_reward);
+
+    return current_amount_to_send - old_amount_to_send;
+}
+
+int get_unlocked_amount(int now_time, int total_amount) method_id {
+    load_data();
+    return _get_unlocked_amount(now_time, total_amount);
+}
+
+int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_deposit) method_id {
+    load_data();
+    return _get_amount_to_withdraw(now_time, last_withdraw_time, total_user_deposit);
+}
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+    if (flags & 1) { ;; ignore all bounced messages
+        return ();
+    }
+    slice sender_address = cs~load_msg_addr();
+
+    load_data();
+
+    int op = in_msg_body~load_uint(32);
+
+    if (op == op::withdraw_from_bill) { ;; probably withdraw from bill
+        slice user_address = in_msg_body~load_msg_addr();
+        throw_unless(error::invalid_bill_sender, equal_slices(sender_address, calculate_bill_address(my_address(), user_address, bill_code)));
+
+        int total_user_deposit = in_msg_body~load_coins();
+        int last_withdraw_time = in_msg_body~load_uint(32);
+        in_msg_body.end_parse();
+
+        int amount_to_send = _get_amount_to_withdraw(now(), last_withdraw_time, total_user_deposit);
+
+        builder msg = create_msg(NON_BOUNCEABLE, user_address, amount_to_send);
+        send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
+
+        return ();
+    }
+
+    throw_unless(error::only_text_comments_supported, op == 0);
+    int action = in_msg_body~load_uint(8);
+    in_msg_body.end_parse();
+    int is_deposit = action == CHAR_D; ;; "d"
+    int is_withdraw = action == CHAR_W; ;; "w"
+    int is_reward = action == CHAR_R; ;; "r"
+
+    throw_unless(error::invalid_comment, is_deposit | is_withdraw | is_reward);
+
+    if (is_reward) {
+
+        throw_unless(error::not_enough_coins_for_reward, msg_value >= minimum_reward);
+        throw_unless(error::deposits_time_ended, now() < deposits_end_time);
+        total_reward += (msg_value - one_ton);
+        save_data();
+
+    } elseif (is_deposit) {
+
+        throw_unless(error::not_enough_coins_for_deposit, msg_value >= minimum_deposit);
+        throw_unless(error::deposits_time_ended, now() < deposits_end_time);
+        int amount = msg_value - one_ton;
+        total_coins_locked += amount;
+
+        cell state_init = calculate_bill_state_init(my_address(), sender_address, bill_code);
+        slice bill_address = calculate_address_by_state_init(state_init);
+
+        cell deposit_body = begin_cell()
+                .store_uint(op::deposit_to_bill, 32)
+                .store_coins(amount)
+                .end_cell();
+
+        builder msg = begin_cell()
+                .store_uint(BOUNCEABLE, 6)
+                .store_slice(bill_address)
+                .store_coins(one_ton / 2)
+                .store_uint(4 + 2 + 1, 1 + 4 + 4 + 64 + 32 + 1 + 1 + 1)
+                .store_ref(state_init)
+                .store_ref(deposit_body);
+
+        send_raw_message(msg.end_cell(), SEND_MODE_REGULAR);
+
+        save_data();
+
+    } else { ;; is_withdraw
+
+        throw_unless(error::msg_value_at_least_one_ton, msg_value >= one_ton);
+        throw_unless(error::withdraw_time_not_started, now() > vesting_start_time + unlock_period);
+        slice bill_address = calculate_bill_address(my_address(), sender_address, bill_code);
+
+        builder msg = create_msg(BOUNCEABLE, bill_address, 0)
+                .store_uint(0, 32) ;; op
+                .store_uint(CHAR_W, 8); ;; "w"
+
+        send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
+
+    }
+
+}
+
+(int, int, int, int, int, int) get_locker_data() method_id {
+    load_data();
+    return (total_coins_locked, total_reward, deposits_end_time, vesting_start_time, vesting_total_duration, unlock_period);
+}
+
+slice get_bill_address(slice user_address) method_id {
+    return calculate_bill_address(my_address(), user_address, bill_code);
+}

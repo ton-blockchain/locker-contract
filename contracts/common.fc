@@ -1,0 +1,68 @@
+const int op::deposit_to_bill = 1;
+const int op::withdraw_from_bill = 2;
+
+const int one_ton = 1000000000;
+
+const int error::msg_value_at_least_one_ton = 60;
+const int error::only_text_comments_supported = 61;
+const int error::invalid_comment = 62;
+const int error::invalid_comment_length = 63;
+
+const int WORKCHAIN = 0;
+
+const int BOUNCEABLE = 0x18;
+const int NON_BOUNCEABLE = 0x10;
+
+const int SEND_MODE_REGULAR = 0;
+const int SEND_MODE_PAY_FEES_SEPARETELY = 1;
+const int SEND_MODE_IGNORE_ERRORS = 2;
+const int SEND_MODE_DESTROY = 32;
+const int SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE = 64;
+const int SEND_MODE_CARRY_ALL_BALANCE = 128;
+
+const int CHAR_D = 100; ;; "d"
+const int CHAR_W = 119; ;; "w"
+const int CHAR_R = 114; ;; "r"
+const int CHAR_E = 101; ;; "e"
+
+cell pack_bill_data(slice locker_address, int total_coins_deposit, slice user_address, int last_withdraw_time) inline {
+    return begin_cell()
+            .store_slice(locker_address)
+            .store_coins(total_coins_deposit)
+            .store_slice(user_address)
+            .store_uint(last_withdraw_time, 32)
+            .end_cell();
+}
+
+cell calculate_bill_state_init(slice locker_address, slice user_address, cell bill_code) inline {
+    return begin_cell()
+            .store_uint(0, 2)
+            .store_dict(bill_code)
+            .store_dict(pack_bill_data(locker_address, 0, user_address, 0))
+            .store_uint(0, 1)
+            .end_cell();
+}
+
+slice create_address(int wc, int address_hash) inline {
+    return begin_cell().store_uint(4, 3)
+            .store_int(wc, 8)
+            .store_uint(address_hash, 256)
+            .end_cell()
+            .begin_parse();
+}
+
+slice calculate_address_by_state_init(cell state_init) inline {
+    return create_address(WORKCHAIN, cell_hash(state_init));
+}
+
+slice calculate_bill_address(slice locker_address, slice user_address, cell bill_code) inline {
+    return calculate_address_by_state_init(calculate_bill_state_init(locker_address, user_address, bill_code));
+}
+
+builder create_msg(int flags, slice to_address, int value) inline {
+    return begin_cell()
+            .store_uint(flags, 6)
+            .store_slice(to_address)
+            .store_coins(value)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1);
+}

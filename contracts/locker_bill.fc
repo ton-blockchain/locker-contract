@@ -1,0 +1,88 @@
+#include "imports/stdlib.fc";
+#include "common.fc";
+
+const int error::only_locker_address = 80;
+const int error::only_locker_or_user_address = 81;
+const int error::only_user_address = 82;
+
+;; storage variables
+
+(slice, int, slice, int) load_data() impure {
+    slice ds = get_data().begin_parse();
+
+    slice locker_address = ds~load_msg_addr();
+    int total_coins_deposit = ds~load_coins();
+    slice user_address = ds~load_msg_addr();
+    int last_withdraw_time = ds~load_uint(32);
+
+    ds.end_parse();
+
+    return (locker_address, total_coins_deposit, user_address, last_withdraw_time);
+}
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+    if (flags & 1) { ;; ignore all bounced messages
+        return ();
+    }
+
+    int op = in_msg_body~load_uint(32);
+    slice sender_address = cs~load_msg_addr();
+    (slice locker_address, int total_coins_deposit, slice user_address, int last_withdraw_time) = load_data();
+    int is_locker = equal_slices(sender_address, locker_address);
+
+    if (op == op::deposit_to_bill) { ;; probably deposit notify from locker
+
+        throw_unless(error::only_locker_address, is_locker);
+        int amount = in_msg_body~load_coins();
+        in_msg_body.end_parse();
+        total_coins_deposit += amount;
+
+    } else {
+
+        throw_unless(error::only_text_comments_supported, op == 0);
+        int action = in_msg_body~load_uint(8);
+        in_msg_body.end_parse();
+        int is_withdraw = action == CHAR_W; ;; "w"
+        int is_recover = action == CHAR_E; ;; "e"
+        throw_unless(error::invalid_comment, is_withdraw | is_recover);
+        int is_user = equal_slices(sender_address, user_address);
+
+        if (is_recover) { ;; if the user mistakenly sent a deposit not to the locker but directly to the bill - we give him the opportunity to withdraw these coins
+            throw_unless(error::only_user_address, is_user);
+
+            raw_reserve(one_ton, 2); ;; reserve 1 ton for storage fees
+
+            builder msg = create_msg(BOUNCEABLE, user_address, 0);
+            send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_BALANCE);
+
+            return ();
+        }
+
+        ;; withdraw
+
+        throw_unless(error::only_locker_or_user_address, is_locker | is_user);
+        if (is_user) {
+            throw_unless(error::msg_value_at_least_one_ton, msg_value >= one_ton);
+        }
+
+        builder msg = create_msg(BOUNCEABLE, locker_address, 0)
+                .store_uint(op::withdraw_from_bill, 32)
+                .store_slice(user_address)
+                .store_coins(total_coins_deposit)
+                .store_uint(last_withdraw_time, 32);
+
+        send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
+
+        last_withdraw_time = now();
+
+    }
+
+    set_data(pack_bill_data(locker_address, total_coins_deposit, user_address, last_withdraw_time));
+
+}
+
+(slice, int, slice, int) get_locker_bill_data() method_id {
+    return load_data();
+}
