@@ -7,8 +7,8 @@ const int error::withdraw_time_not_started = 73;
 const int error::not_enough_coins_for_deposit = 74;
 const int error::not_enough_coins_for_reward = 75;
 
-const int minimum_deposit = 50000000000; ;; 50 TON, minimum_deposit must be greater than 1 ton
-const int minimum_reward = 50000000000; ;; 50 TON, minimum_reward must be greater than 1 ton
+const int MINIMUM_DEPOSIT = 50 * ONE_TON; ;; MINIMUM_DEPOSIT must be greater than 1 ton
+const int MINIMUM_REWARD = 50 * ONE_TON; ;; MINIMUM_REWARD must be greater than 1 ton
 
 ;; storage variables
 
@@ -112,24 +112,24 @@ int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_
     throw_unless(error::only_text_comments_supported, op == 0);
     int action = in_msg_body~load_uint(8);
     in_msg_body.end_parse();
-    int is_deposit = action == CHAR_D; ;; "d"
-    int is_withdraw = action == CHAR_W; ;; "w"
-    int is_reward = action == CHAR_R; ;; "r"
+    int is_deposit = action == "d"u;
+    int is_withdraw = action == "w"u;
+    int is_reward = action == "r"u;
 
     throw_unless(error::invalid_comment, is_deposit | is_withdraw | is_reward);
 
     if (is_reward) {
 
-        throw_unless(error::not_enough_coins_for_reward, msg_value >= minimum_reward);
+        throw_unless(error::not_enough_coins_for_reward, msg_value >= MINIMUM_REWARD);
         throw_unless(error::deposits_time_ended, now() < deposits_end_time);
-        total_reward += (msg_value - one_ton);
+        total_reward += (msg_value - ONE_TON);
         save_data();
 
     } elseif (is_deposit) {
 
-        throw_unless(error::not_enough_coins_for_deposit, msg_value >= minimum_deposit);
+        throw_unless(error::not_enough_coins_for_deposit, msg_value >= MINIMUM_DEPOSIT);
         throw_unless(error::deposits_time_ended, now() < deposits_end_time);
-        int amount = msg_value - one_ton;
+        int amount = msg_value - ONE_TON;
         total_coins_locked += amount;
 
         cell state_init = calculate_bill_state_init(my_address(), sender_address, bill_code);
@@ -143,7 +143,7 @@ int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_
         builder msg = begin_cell()
                 .store_uint(BOUNCEABLE, 6)
                 .store_slice(bill_address)
-                .store_coins(one_ton / 2)
+                .store_coins(ONE_TON / 2)
                 .store_uint(4 + 2 + 1, 1 + 4 + 4 + 64 + 32 + 1 + 1 + 1)
                 .store_ref(state_init)
                 .store_ref(deposit_body);
@@ -154,13 +154,13 @@ int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_
 
     } else { ;; is_withdraw
 
-        throw_unless(error::msg_value_at_least_one_ton, msg_value >= one_ton);
+        throw_unless(error::msg_value_at_least_one_ton, msg_value >= ONE_TON);
         throw_unless(error::withdraw_time_not_started, now() > vesting_start_time + unlock_period);
         slice bill_address = calculate_bill_address(my_address(), sender_address, bill_code);
 
         builder msg = create_msg(BOUNCEABLE, bill_address, 0)
                 .store_uint(0, 32) ;; op
-                .store_uint(CHAR_W, 8); ;; "w"
+                .store_uint("w"u, 8);
 
         send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
 

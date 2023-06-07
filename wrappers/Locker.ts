@@ -23,8 +23,8 @@ export function lockerConfigToCell(config: LockerConfig): Cell {
 }
 
 export const Opcodes = {
-    deposit_to_bill: 1,
-    withdraw_from_bill: 2,
+    deposit_to_bill: 0x8ad026be,
+    withdraw_from_bill: 0xd6416bfe,
 };
 
 export const ErrorCodes = {

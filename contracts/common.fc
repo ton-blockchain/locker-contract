@@ -1,12 +1,12 @@
-const int op::deposit_to_bill = 1;
-const int op::withdraw_from_bill = 2;
-
-const int one_ton = 1000000000;
+const int op::deposit_to_bill = 0x8ad026be;
+const int op::withdraw_from_bill = 0xd6416bfe;
 
 const int error::msg_value_at_least_one_ton = 60;
 const int error::only_text_comments_supported = 61;
 const int error::invalid_comment = 62;
 const int error::invalid_comment_length = 63;
+
+const int ONE_TON = 1000000000;
 
 const int WORKCHAIN = 0;
 
@@ -19,11 +19,6 @@ const int SEND_MODE_IGNORE_ERRORS = 2;
 const int SEND_MODE_DESTROY = 32;
 const int SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE = 64;
 const int SEND_MODE_CARRY_ALL_BALANCE = 128;
-
-const int CHAR_D = 100; ;; "d"
-const int CHAR_W = 119; ;; "w"
-const int CHAR_R = 114; ;; "r"
-const int CHAR_E = 101; ;; "e"
 
 cell pack_bill_data(slice locker_address, int total_coins_deposit, slice user_address, int last_withdraw_time) inline {
     return begin_cell()

@@ -8,13 +8,14 @@ import {TransactionComputeVm} from "ton-core/src/types/TransactionComputePhase";
 import {LockerBill} from "../wrappers/LockerBill";
 
 const TIME = 1685889892;
-const lockerBillCode = Cell.fromBoc(Buffer.from('b5ee9c724101070100f0000114ff00f4a413f4bcf2c80b0102016203020009a19c05e00f0202cd05040019f76a2687d207d007d20698fe8c017fd76d176fd99e8698180b8d8492f81f001698f81fd20187803a9a1e382936000ce1a9a9a81797028027d0068d071872ce42802678b2c7d0100e78b658fe4f6aa40600fc06c000f2bd07d307d120c07701c06566b1f2be5141c705048e28345b6c22f2e05282103b9aca0072fb02801801707003c8cb0558cf1601fa02cb6ac98306fb00db31e05143b1f2e051029a0382103b9aca00bef2bc9133e272801824707003c8cb0558cf1601fa02cb6acb1f22cf1621fa0214cb1fc98040fb0058f823017ee09b3f', 'hex'))[0];
 
 describe('Locker', () => {
     let code: Cell;
+    let lockerBillCode: Cell
 
     beforeAll(async () => {
         code = await compile('Locker');
+        lockerBillCode = await compile('LockerBill');
     });
 
     let blockchain: Blockchain;
@@ -383,7 +384,7 @@ describe('Locker', () => {
         expect(result3.transactions).toHaveTransaction({
             from: locker.address,
             to: user.address,
-            value: 10777493000n,
+            value: 10779298000n,
             success: true,
             body: beginCell()
                 .endCell()
@@ -643,13 +644,13 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 985255000n,
+            value: 986578000n,
             body: beginCell()
                 .endCell()
         });
     });
 
-    it('withdraw_from_bill 25% and 100%', async () => {
+    it('withdraw_from_bill 40% and 100%', async () => {
         const result = await locker.sendChar(user.getSender(), {
             value: toNano('50'),
             char: 'd'
@@ -717,7 +718,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 20585055000n,
+            value: 20586396000n,
             body: beginCell()
                 .endCell()
         });
@@ -758,7 +759,138 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 30385223000n,
+            value: 30386564000n,
+            body: beginCell()
+                .endCell()
+        });
+
+    });
+
+    it('withdraw_from_bill 20% and 100% with REWARD', async () => {
+        const result = await locker.sendChar(user.getSender(), {
+            value: toNano('50'),
+            char: 'd'
+        });
+        expect(result.transactions).toHaveTransaction({
+            from: user.address,
+            to: locker.address,
+            success: true,
+        });
+
+        const resultD = await locker.sendChar(notUser.getSender(), {
+            value: toNano('200'),
+            char: 'd'
+        });
+        expect(resultD.transactions).toHaveTransaction({
+            from: notUser.address,
+            to: locker.address,
+            success: true,
+        });
+
+        const result2 = await locker.sendChar(notUser.getSender(), {
+            value: toNano('666'),
+            char: 'r'
+        });
+
+        const data = await locker.getData();
+        expect(data.totalCoinsLocked).toBe(toNano('49') + toNano('199'));
+        expect(data.totalReward).toBe(toNano('665'));
+        expect(data.depositsEndTime).toBe(TIME + 100);
+        expect(data.vestingStartTime).toBe(TIME + 1000);
+        expect(data.vestingTotalDuration).toBe(600);
+        expect(data.unlockPeriod).toBe(60);
+
+        expect(result.transactions).toHaveTransaction({
+            from: locker.address,
+            to: lockerBill.address,
+            success: true,
+            body: beginCell().storeUint(Opcodes.deposit_to_bill, 32).storeCoins(toNano('49')).endCell()
+        });
+
+        const billData = await lockerBill.getData();
+        expect(billData.lockerAddress.toString()).toBe(locker.address.toString());
+        expect(billData.totalCoinsDeposit).toBe(toNano('49'));
+        expect(billData.userAddress.toString()).toBe(user.address.toString());
+        expect(billData.lastWithdrawTime).toBe(0);
+
+        // withdraw
+
+        blockchain.now = TIME + 1000 + 60*2;
+
+        const result3 = await lockerBill.sendChar(user.getSender(), {
+            value: toNano('1'),
+            char: 'w'
+        });
+        expect(result3.transactions).toHaveTransaction({
+            from: user.address,
+            to: lockerBill.address,
+            success: true,
+        });
+
+        const billData3 = await lockerBill.getData();
+        expect(billData3.lockerAddress.toString()).toBe(locker.address.toString());
+        expect(billData3.totalCoinsDeposit).toBe(toNano('49'));
+        expect(billData3.userAddress.toString()).toBe(user.address.toString());
+        expect(billData3.lastWithdrawTime).toBe(TIME + 1000 + 60*2);
+
+        expect(result3.transactions).toHaveTransaction({
+            from: lockerBill.address,
+            to: locker.address,
+            success: true,
+            body: beginCell()
+                .storeUint(Opcodes.withdraw_from_bill, 32)
+                .storeAddress(user.address)
+                .storeCoins(toNano('49')) // total deposit
+                .storeUint(0, 32) // last withdrawal
+                .endCell()
+        });
+
+        expect(result3.transactions).toHaveTransaction({
+            from: locker.address,
+            to: user.address,
+            success: true,
+            value: 37064621806n,
+            body: beginCell()
+                .endCell()
+        });
+
+        // seconds withdraw
+
+        blockchain.now = TIME + 1000 + 60*10;
+
+        const result4 = await lockerBill.sendChar(user.getSender(), {
+            value: toNano('1'),
+            char: 'w'
+        });
+        expect(result4.transactions).toHaveTransaction({
+            from: user.address,
+            to: lockerBill.address,
+            success: true,
+        });
+
+        const billData4 = await lockerBill.getData();
+        expect(billData4.lockerAddress.toString()).toBe(locker.address.toString());
+        expect(billData4.totalCoinsDeposit).toBe(toNano('49'));
+        expect(billData4.userAddress.toString()).toBe(user.address.toString());
+        expect(billData4.lastWithdrawTime).toBe(TIME + 1000 + 60*10);
+
+        expect(result4.transactions).toHaveTransaction({
+            from: lockerBill.address,
+            to: locker.address,
+            success: true,
+            body: beginCell()
+                .storeUint(Opcodes.withdraw_from_bill, 32)
+                .storeAddress(user.address)
+                .storeCoins(toNano('49')) // total deposit
+                .storeUint(TIME + 1000 + 60*2, 32) // last withdrawal
+                .endCell()
+        });
+
+        expect(result4.transactions).toHaveTransaction({
+            from: locker.address,
+            to: user.address,
+            success: true,
+            value: 145299467226n,
             body: beginCell()
                 .endCell()
         });
@@ -833,7 +965,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 49985423000n,
+            value: 49986746000n,
             body: beginCell()
                 .endCell()
         });
