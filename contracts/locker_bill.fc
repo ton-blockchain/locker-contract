@@ -7,7 +7,7 @@ const int error::only_user_address = 82;
 
 ;; storage variables
 
-(slice, int, slice, int) load_data() impure {
+(slice, int, slice, int) load_data() impure inline {
     slice ds = get_data().begin_parse();
 
     slice locker_address = ds~load_msg_addr();

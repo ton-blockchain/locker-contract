@@ -20,7 +20,7 @@ global int vesting_total_duration;
 global int unlock_period;
 global cell bill_code;
 
-() load_data() impure {
+() load_data() impure inline_ref {
     slice ds = get_data().begin_parse();
 
     total_coins_locked = ds~load_coins();
@@ -34,7 +34,7 @@ global cell bill_code;
     ds.end_parse();
 }
 
-() save_data() impure {
+() save_data() impure inline_ref {
     set_data(
             begin_cell()
                     .store_coins(total_coins_locked)
@@ -48,7 +48,7 @@ global cell bill_code;
     );
 }
 
-int _get_unlocked_amount(int now_time, int total_amount) {
+int _get_unlocked_amount(int now_time, int total_amount) inline_ref {
     if (now_time >= vesting_start_time + vesting_total_duration) {
         return total_amount;
     }
@@ -57,11 +57,13 @@ int _get_unlocked_amount(int now_time, int total_amount) {
         return 0;
     }
 
-    return total_amount * ((now_time - vesting_start_time) / unlock_period) / (vesting_total_duration / unlock_period);
+    return muldiv(total_amount,
+                  (now_time - vesting_start_time) / unlock_period,
+                  vesting_total_duration / unlock_period);
 }
 
-int _get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_deposit) {
-    int total_user_deposit_and_reward = total_user_deposit + (total_user_deposit * total_reward / total_coins_locked);
+int _get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_deposit) inline {
+    int total_user_deposit_and_reward = total_user_deposit + muldiv(total_user_deposit, total_reward, total_coins_locked);
 
     int old_amount_to_send = _get_unlocked_amount(last_withdraw_time, total_user_deposit_and_reward);
     int current_amount_to_send = _get_unlocked_amount(now_time, total_user_deposit_and_reward);
