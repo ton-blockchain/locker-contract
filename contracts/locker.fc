@@ -175,5 +175,6 @@ int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_
 }
 
 slice get_bill_address(slice user_address) method_id {
+    load_data();
     return calculate_bill_address(my_address(), user_address, bill_code);
 }

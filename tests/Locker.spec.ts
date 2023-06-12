@@ -83,8 +83,8 @@ describe('Locker', () => {
     });
 
     it('get_bill_address', async () => {
-        // const data = await locker.getBillAddress(user.address);
-        // expect(data.toString()).toBe(lockerBill.address.toString());
+        const data = await locker.getBillAddress(user.address);
+        expect(data.toString()).toBe(lockerBill.address.toString());
     });
 
 
