@@ -385,7 +385,7 @@ describe('Locker', () => {
         expect(result3.transactions).toHaveTransaction({
             from: locker.address,
             to: user.address,
-            value: 10779224000n,
+            value: 10778740000n,
             success: true,
             body: beginCell()
                 .endCell()
@@ -646,7 +646,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 986504000n,
+            value: 986262000n,
             body: beginCell()
                 .endCell()
         });
@@ -721,7 +721,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 20586322000n,
+            value: 20586080000n,
             body: beginCell()
                 .endCell()
         });
@@ -763,7 +763,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 30386490000n,
+            value: 30386248000n,
             body: beginCell()
                 .endCell()
         });
@@ -854,7 +854,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 37064547806n,
+            value: 37064305806n,
             body: beginCell()
                 .endCell()
         });
@@ -896,7 +896,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 145299393226n,
+            value: 145299151226n,
             body: beginCell()
                 .endCell()
         });
@@ -972,7 +972,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 49986672000n,
+            value: 49986430000n,
             body: beginCell()
                 .endCell()
         });

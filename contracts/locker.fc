@@ -6,9 +6,13 @@ const int error::deposits_time_ended = 72;
 const int error::withdraw_time_not_started = 73;
 const int error::not_enough_coins_for_deposit = 74;
 const int error::not_enough_coins_for_reward = 75;
+const int error::invalid_start_time = 76;
+const int error::invalid_unlock_period = 77;
 
 const int MINIMUM_DEPOSIT = 50 * ONE_TON; ;; MINIMUM_DEPOSIT must be greater than 1 ton
 const int MINIMUM_REWARD = 50 * ONE_TON; ;; MINIMUM_REWARD must be greater than 1 ton
+
+int mod(int x, int y) asm "MOD";
 
 ;; storage variables
 
@@ -30,6 +34,9 @@ global cell bill_code;
     vesting_total_duration = ds~load_uint(32);
     unlock_period = ds~load_uint(32);
     bill_code = ds~load_ref();
+
+    throw_unless(error::invalid_start_time, deposits_end_time < vesting_start_time);
+    throw_unless(error::invalid_unlock_period, mod(vesting_total_duration, unlock_period) == 0);
 
     ds.end_parse();
 }
@@ -156,7 +163,7 @@ int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_
     } else { ;; is_withdraw
 
         throw_unless(error::msg_value_at_least_one_ton, msg_value >= ONE_TON);
-        throw_unless(error::withdraw_time_not_started, now() > vesting_start_time + unlock_period);
+        throw_unless(error::withdraw_time_not_started, now() >= vesting_start_time + unlock_period);
         slice bill_address = calculate_bill_address(my_address(), sender_address, bill_code);
 
         builder msg = create_msg(BOUNCEABLE, bill_address, 0)
