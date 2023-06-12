@@ -194,26 +194,26 @@ describe('LockerBill', () => {
         expect(data2.lastWithdrawTime).toBe(0);
     });
 
-    it('bounce withdraw from user with 0.5 ton', async () => {
-        const result = await lockerBill.sendChar(user.getSender(), {
-            value: toNano('0.5'),
-            char: 'w',
-        });
-        expect((result.transactions[1].description as TransactionDescriptionGeneric).aborted).toBeTruthy();
-        expect(((result.transactions[1].description as TransactionDescriptionGeneric).computePhase as TransactionComputeVm).exitCode).toBe(ErrorCodes.msg_value_at_least_one_ton);
-    });
-
     it('withdraw from notuser', async () => {
         const result = await lockerBill.sendChar(notUser.getSender(), {
             value: toNano('1'),
             char: 'w',
         });
         expect((result.transactions[1].description as TransactionDescriptionGeneric).aborted).toBeTruthy();
-        expect(((result.transactions[1].description as TransactionDescriptionGeneric).computePhase as TransactionComputeVm).exitCode).toBe(ErrorCodes.only_locker_or_user_address);
+        expect(((result.transactions[1].description as TransactionDescriptionGeneric).computePhase as TransactionComputeVm).exitCode).toBe(ErrorCodes.only_locker_address);
     });
 
-    it('withdraw from user with 1 ton', async () => {
+    it('withdraw from user', async () => {
         const result = await lockerBill.sendChar(user.getSender(), {
+            value: toNano('1'),
+            char: 'w',
+        });
+        expect((result.transactions[1].description as TransactionDescriptionGeneric).aborted).toBeTruthy();
+        expect(((result.transactions[1].description as TransactionDescriptionGeneric).computePhase as TransactionComputeVm).exitCode).toBe(ErrorCodes.only_locker_address);
+    });
+
+    it('withdraw from locker with 1 ton', async () => {
+        const result = await lockerBill.sendChar(locker.getSender(), {
             value: toNano('1'),
             char: 'w',
         });
@@ -238,7 +238,7 @@ describe('LockerBill', () => {
         expect(data.lastWithdrawTime).toBe(TIME);
     });
 
-    it('withdraw amount from user with 1 ton', async () => {
+    it('withdraw amount from locker with 1 ton', async () => {
 
         // deposit
 
@@ -262,7 +262,7 @@ describe('LockerBill', () => {
 
         blockchain.now = TIME + 1;
 
-        const result2 = await lockerBill.sendChar(user.getSender(), {
+        const result2 = await lockerBill.sendChar(locker.getSender(), {
             value: toNano('1'),
             char: 'w',
         });
@@ -290,7 +290,7 @@ describe('LockerBill', () => {
 
         blockchain.now = TIME + 100000;
 
-        const result3 = await lockerBill.sendChar(user.getSender(), {
+        const result3 = await lockerBill.sendChar(locker.getSender(), {
             value: toNano('1'),
             char: 'w',
         });

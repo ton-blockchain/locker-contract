@@ -385,7 +385,7 @@ describe('Locker', () => {
         expect(result3.transactions).toHaveTransaction({
             from: locker.address,
             to: user.address,
-            value: 10778740000n,
+            value: 10779005000n,
             success: true,
             body: beginCell()
                 .endCell()
@@ -554,13 +554,15 @@ describe('Locker', () => {
         );
         await lockerBill2.sendDeploy(deployer2.getSender(), toNano('0.05'));
 
-        const result = await lockerBill2.sendChar(user.getSender(), {
+        blockchain.now = TIME + 1061;
+
+        const result = await locker2.sendChar(user.getSender(), {
             value: toNano('1'),
             char: 'w'
         });
         expect(result.transactions).toHaveTransaction({
             from: user.address,
-            to: lockerBill2.address,
+            to: locker2.address,
             success: true,
         });
         expect(result.transactions).toHaveTransaction({
@@ -575,81 +577,6 @@ describe('Locker', () => {
         expect(msg.info.value.coins).toBeGreaterThan(toNano('0.9'));
         expect(msg.info.value.coins).toBeLessThan(toNano('1'));
 
-    });
-
-    it('withdraw_from_bill before vesting_start_period', async () => {
-        const result = await locker.sendChar(user.getSender(), {
-            value: toNano('50'),
-            char: 'd'
-        });
-        expect(result.transactions).toHaveTransaction({
-            from: user.address,
-            to: locker.address,
-            success: true,
-        });
-
-        const data = await locker.getData();
-        expect(data.totalCoinsLocked).toBe(toNano('49'));
-        expect(data.totalReward).toBe(0n);
-        expect(data.depositsEndTime).toBe(TIME + 100);
-        expect(data.vestingStartTime).toBe(TIME + 1000);
-        expect(data.vestingTotalDuration).toBe(600);
-        expect(data.unlockPeriod).toBe(60);
-
-        expect(result.transactions).toHaveTransaction({
-            from: locker.address,
-            to: lockerBill.address,
-            success: true,
-            body: beginCell().storeUint(Opcodes.deposit_to_bill, 32).storeCoins(toNano('49')).endCell()
-        });
-
-        const billData = await lockerBill.getData();
-        expect(billData.lockerAddress.toString()).toBe(locker.address.toString());
-        expect(billData.totalCoinsDeposit).toBe(toNano('49'));
-        expect(billData.userAddress.toString()).toBe(user.address.toString());
-        expect(billData.lastWithdrawTime).toBe(0);
-
-        // withdraw
-
-        blockchain.now = TIME + 101;
-
-        const result3 = await lockerBill.sendChar(user.getSender(), {
-            value: toNano('1'),
-            char: 'w'
-        });
-        expect(result3.transactions).toHaveTransaction({
-            from: user.address,
-            to: lockerBill.address,
-            success: true,
-        });
-
-        const billData3 = await lockerBill.getData();
-        expect(billData3.lockerAddress.toString()).toBe(locker.address.toString());
-        expect(billData3.totalCoinsDeposit).toBe(toNano('49'));
-        expect(billData3.userAddress.toString()).toBe(user.address.toString());
-        expect(billData3.lastWithdrawTime).toBe(TIME + 101);
-
-        expect(result3.transactions).toHaveTransaction({
-            from: lockerBill.address,
-            to: locker.address,
-            success: true,
-            body: beginCell()
-                .storeUint(Opcodes.withdraw_from_bill, 32)
-                .storeAddress(user.address)
-                .storeCoins(toNano('49')) // total deposit
-                .storeUint(0, 32) // last withdrawal
-                .storeUint(TIME + 101, 32) // now_time
-                .endCell()
-        });
-
-        expect(result3.transactions).toHaveTransaction({
-            from: locker.address,
-            to: user.address,
-            success: true,
-            value: 986262000n,
-            body: beginCell()
-                .endCell()
-        });
     });
 
     it('withdraw_from_bill 40% and 100%', async () => {
@@ -688,13 +615,13 @@ describe('Locker', () => {
 
         blockchain.now = TIME + 1000 + 60*4;
 
-        const result3 = await lockerBill.sendChar(user.getSender(), {
+        const result3 = await locker.sendChar(user.getSender(), {
             value: toNano('1'),
             char: 'w'
         });
         expect(result3.transactions).toHaveTransaction({
             from: user.address,
-            to: lockerBill.address,
+            to: locker.address,
             success: true,
         });
 
@@ -721,7 +648,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 20586080000n,
+            value: 20579005000n,
             body: beginCell()
                 .endCell()
         });
@@ -730,13 +657,13 @@ describe('Locker', () => {
 
         blockchain.now = TIME + 1000 + 60*10;
 
-        const result4 = await lockerBill.sendChar(user.getSender(), {
+        const result4 = await locker.sendChar(user.getSender(), {
             value: toNano('1'),
             char: 'w'
         });
         expect(result4.transactions).toHaveTransaction({
             from: user.address,
-            to: lockerBill.address,
+            to: locker.address,
             success: true,
         });
 
@@ -763,7 +690,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 30386248000n,
+            value: 30379173000n,
             body: beginCell()
                 .endCell()
         });
@@ -821,13 +748,13 @@ describe('Locker', () => {
 
         blockchain.now = TIME + 1000 + 60*2;
 
-        const result3 = await lockerBill.sendChar(user.getSender(), {
+        const result3 = await locker.sendChar(user.getSender(), {
             value: toNano('1'),
             char: 'w'
         });
         expect(result3.transactions).toHaveTransaction({
             from: user.address,
-            to: lockerBill.address,
+            to: locker.address,
             success: true,
         });
 
@@ -854,7 +781,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 37064305806n,
+            value: 37057230806n,
             body: beginCell()
                 .endCell()
         });
@@ -863,13 +790,13 @@ describe('Locker', () => {
 
         blockchain.now = TIME + 1000 + 60*10;
 
-        const result4 = await lockerBill.sendChar(user.getSender(), {
+        const result4 = await locker.sendChar(user.getSender(), {
             value: toNano('1'),
             char: 'w'
         });
         expect(result4.transactions).toHaveTransaction({
             from: user.address,
-            to: lockerBill.address,
+            to: locker.address,
             success: true,
         });
 
@@ -896,7 +823,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 145299151226n,
+            value: 145292076226n,
             body: beginCell()
                 .endCell()
         });
@@ -939,13 +866,13 @@ describe('Locker', () => {
 
         blockchain.now = TIME + 100000;
 
-        const result3 = await lockerBill.sendChar(user.getSender(), {
+        const result3 = await locker.sendChar(user.getSender(), {
             value: toNano('1'),
             char: 'w'
         });
         expect(result3.transactions).toHaveTransaction({
             from: user.address,
-            to: lockerBill.address,
+            to: locker.address,
             success: true,
         });
 
@@ -972,7 +899,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 49986430000n,
+            value: 49979355000n,
             body: beginCell()
                 .endCell()
         });

@@ -2,7 +2,6 @@
 #include "common.fc";
 
 const int error::only_locker_address = 80;
-const int error::only_locker_or_user_address = 81;
 const int error::only_user_address = 82;
 
 ;; storage variables
@@ -47,10 +46,9 @@ const int error::only_user_address = 82;
         int is_withdraw = action == "w"u;
         int is_recover = action == "e"u;
         throw_unless(error::invalid_comment, is_withdraw | is_recover);
-        int is_user = equal_slices(sender_address, user_address);
 
         if (is_recover) { ;; if the user mistakenly sent a deposit not to the locker but directly to the bill - we give him the opportunity to withdraw these coins
-            throw_unless(error::only_user_address, is_user);
+            throw_unless(error::only_user_address, equal_slices(sender_address, user_address));
 
             raw_reserve(ONE_TON, 2); ;; reserve 1 ton for storage fees
 
@@ -62,10 +60,7 @@ const int error::only_user_address = 82;
 
         ;; withdraw
 
-        throw_unless(error::only_locker_or_user_address, is_locker | is_user);
-        if (is_user) {
-            throw_unless(error::msg_value_at_least_one_ton, msg_value >= ONE_TON);
-        }
+        throw_unless(error::only_locker_address, is_locker);
 
         int now_time = now();
 

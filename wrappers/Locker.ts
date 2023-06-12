@@ -40,7 +40,6 @@ export const ErrorCodes = {
     not_enough_coins_for_reward: 75,
 
     only_locker_address: 80,
-    only_locker_or_user_address: 81,
     only_user_address: 82,
 }
 
