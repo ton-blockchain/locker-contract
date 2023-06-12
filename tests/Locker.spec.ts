@@ -378,13 +378,14 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('98')) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME + 1061, 32) // now_time
                 .endCell()
         });
 
         expect(result3.transactions).toHaveTransaction({
             from: locker.address,
             to: user.address,
-            value: 10779298000n,
+            value: 10779224000n,
             success: true,
             body: beginCell()
                 .endCell()
@@ -637,6 +638,7 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('49')) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME + 101, 32) // now_time
                 .endCell()
         });
 
@@ -644,7 +646,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 986578000n,
+            value: 986504000n,
             body: beginCell()
                 .endCell()
         });
@@ -711,6 +713,7 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('49')) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME + 1000 + 60*4, 32) // now_time
                 .endCell()
         });
 
@@ -718,7 +721,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 20586396000n,
+            value: 20586322000n,
             body: beginCell()
                 .endCell()
         });
@@ -752,6 +755,7 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('49')) // total deposit
                 .storeUint(TIME + 1000 + 60*4, 32) // last withdrawal
+                .storeUint(TIME + 1000 + 60*10, 32) // now_time
                 .endCell()
         });
 
@@ -759,7 +763,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 30386564000n,
+            value: 30386490000n,
             body: beginCell()
                 .endCell()
         });
@@ -842,6 +846,7 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('49')) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME + 1000 + 60*2, 32) // now_time
                 .endCell()
         });
 
@@ -849,7 +854,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 37064621806n,
+            value: 37064547806n,
             body: beginCell()
                 .endCell()
         });
@@ -883,6 +888,7 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('49')) // total deposit
                 .storeUint(TIME + 1000 + 60*2, 32) // last withdrawal
+                .storeUint(TIME + 1000 + 60*10, 32) // now_time
                 .endCell()
         });
 
@@ -890,7 +896,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 145299467226n,
+            value: 145299393226n,
             body: beginCell()
                 .endCell()
         });
@@ -958,6 +964,7 @@ describe('Locker', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('49')) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME + 100000, 32) // now_time
                 .endCell()
         });
 
@@ -965,7 +972,7 @@ describe('Locker', () => {
             from: locker.address,
             to: user.address,
             success: true,
-            value: 49986746000n,
+            value: 49986672000n,
             body: beginCell()
                 .endCell()
         });

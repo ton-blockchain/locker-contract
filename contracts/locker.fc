@@ -99,9 +99,10 @@ int get_amount_to_withdraw(int now_time, int last_withdraw_time, int total_user_
 
         int total_user_deposit = in_msg_body~load_coins();
         int last_withdraw_time = in_msg_body~load_uint(32);
+        int now_time = in_msg_body~load_uint(32);
         in_msg_body.end_parse();
 
-        int amount_to_send = _get_amount_to_withdraw(now(), last_withdraw_time, total_user_deposit);
+        int amount_to_send = _get_amount_to_withdraw(now_time, last_withdraw_time, total_user_deposit);
 
         builder msg = create_msg(NON_BOUNCEABLE, user_address, amount_to_send);
         send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);

@@ -227,6 +227,7 @@ describe('LockerBill', () => {
                 .storeAddress(user.address)
                 .storeCoins(0) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME, 32) // now_time
                 .endCell()
         });
 
@@ -275,6 +276,7 @@ describe('LockerBill', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('1000000')) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME + 1, 32) // now_time
                 .endCell()
         });
 
@@ -302,6 +304,7 @@ describe('LockerBill', () => {
                 .storeAddress(user.address)
                 .storeCoins(toNano('1000000')) // total deposit
                 .storeUint(TIME + 1, 32) // last withdrawal
+                .storeUint(TIME + 100000, 32) // now_time
                 .endCell()
         });
 
@@ -327,6 +330,7 @@ describe('LockerBill', () => {
                 .storeAddress(user.address)
                 .storeCoins(0) // total deposit
                 .storeUint(0, 32) // last withdrawal
+                .storeUint(TIME, 32) // now_time
                 .endCell()
         });
 

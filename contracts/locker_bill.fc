@@ -67,15 +67,18 @@ const int error::only_user_address = 82;
             throw_unless(error::msg_value_at_least_one_ton, msg_value >= ONE_TON);
         }
 
+        int now_time = now();
+
         builder msg = create_msg(BOUNCEABLE, locker_address, 0)
                 .store_uint(op::withdraw_from_bill, 32)
                 .store_slice(user_address)
                 .store_coins(total_coins_deposit)
-                .store_uint(last_withdraw_time, 32);
+                .store_uint(last_withdraw_time, 32)
+                .store_uint(now_time, 32);
 
         send_raw_message(msg.end_cell(), SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
 
-        last_withdraw_time = now();
+        last_withdraw_time = now_time;
 
     }
 
