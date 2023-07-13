@@ -32,7 +32,7 @@ A deposit minus 1 TON is credited (1 TON goes to network costs).
 
 One user can send several times in this case the deposit is summed up.
 
-> ⚠️ ATTENTION: Always send a message in BOUNCEABLE mode
+> ⚠️ ATTENTION: Always send a message in BOUNCEABLE mode. Use `-b` flag if you using [wallet-script.fif](https://github.com/ton-blockchain/ton/blob/master/crypto/smartcont/wallet-v3.fif).
 
 If you send less than 50 TON or message without valid text comment, the amount will bounce.
 
@@ -48,7 +48,7 @@ A reward minus 1 TON is credited (1 TON goes to network costs).
 
 Rewards can be sent several times in this case the total reward is summed up.
 
-> ⚠️ ATTENTION: Always send a message in BOUNCEABLE mode
+> ⚠️ ATTENTION: Always send a message in BOUNCEABLE mode. Use `-b` flag if you using [wallet-script.fif](https://github.com/ton-blockchain/ton/blob/master/crypto/smartcont/wallet-v3.fif).
 
 If you send less than 50 TON or message without valid text comment, the amount will bounce.
 
