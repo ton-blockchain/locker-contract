@@ -20,6 +20,8 @@ Get-method `get_locker_data` returns the smart contract parameters:
 
 `vesting_total_duration` must be divisible by the `unlock_period` - `mod(vesting_total_duration, unlock_period) == 0`.
 
+All time parameters must be greater than zero.
+
 ## Deposits
 
 In order to make a deposit, you need to send at least 50 TON to the locker contract with a text comment "d" (lowercase letter).
@@ -29,6 +31,22 @@ Anyone can send.
 A deposit minus 1 TON is credited (1 TON goes to network costs).
 
 One user can send several times in this case the deposit is summed up.
+
+> ⚠️ ATTENTION: Always send a message in BOUNCEABLE mode
+
+If you send less than 50 TON or message without valid text comment, the amount will bounce.
+
+If send after `deposits_end_time` the amount will bounce.
+
+## Rewards
+
+In order to add reward, you need to send at least 50 TON to the locker contract with a text comment "r" (lowercase letter).
+
+Anyone can send.
+
+A reward minus 1 TON is credited (1 TON goes to network costs).
+
+Rewards can be sent several times in this case the total reward is summed up.
 
 > ⚠️ ATTENTION: Always send a message in BOUNCEABLE mode
 
