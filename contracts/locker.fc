@@ -19,8 +19,8 @@ int mod(int x, int y) asm "MOD";
 global int total_coins_locked;
 global int total_reward;
 global int deposits_end_time;
-global int vesting_start_time;
-global int vesting_total_duration;
+global int vesting_start_time; ;; max 7 Feb 2106
+global int vesting_total_duration; ;; max 135 years
 global int unlock_period;
 global cell bill_code;
 
